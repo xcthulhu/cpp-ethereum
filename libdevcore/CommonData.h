@@ -24,6 +24,9 @@
 #pragma once
 
 #include <vector>
+#include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <algorithm>
 #include <type_traits>
 #include <cstring>

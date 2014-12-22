@@ -34,9 +34,15 @@
 #endif
 
 #include <map>
+#include <iostream>
 #include <vector>
 #include <set>
+//#define ETH_FIXEDINT 1
+#if ETH_FIXEDINT
+#include "../extdep/boost/large_int.hpp"
+#else
 #include <boost/multiprecision/cpp_int.hpp>
+#endif
 #include "vector_ref.h"
 #include "debugbreak.h"
 
@@ -58,12 +64,29 @@ using bytesRef = vector_ref<byte>;
 using bytesConstRef = vector_ref<byte const>;
 
 // Numeric types.
-using bigint = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<>>;
+#if ETH_FIXEDINT
+using u128 =  boost::large_int::luint128_t;
+using s128 =  boost::large_int::lint128_t;
+using u160 =  boost::large_int::luint160_t;
+using s160 =  boost::large_int::lint160_t;
+using u256 =  boost::large_int::luint256_t;
+using s256 =  boost::large_int::lint256_t;
+using u512 =  boost::large_int::large_int<u256, u256>;
+using s512 =  boost::large_int::large_int<u256, s256>;
+using u1024 = boost::large_int::large_int<u512, u512>;
+using s1024 = boost::large_int::large_int<u512, s512>;
+using bigint = s1024;
+#else
 using u128 =  boost::multiprecision::number<boost::multiprecision::cpp_int_backend<128, 128, boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>>;
-using u256 =  boost::multiprecision::number<boost::multiprecision::cpp_int_backend<256, 256, boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>>;
-using s256 =  boost::multiprecision::number<boost::multiprecision::cpp_int_backend<256, 256, boost::multiprecision::signed_magnitude, boost::multiprecision::unchecked, void>>;
+using s128 =  boost::multiprecision::number<boost::multiprecision::cpp_int_backend<128, 128, boost::multiprecision::signed_magnitude, boost::multiprecision::unchecked, void>>;
 using u160 =  boost::multiprecision::number<boost::multiprecision::cpp_int_backend<160, 160, boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>>;
 using s160 =  boost::multiprecision::number<boost::multiprecision::cpp_int_backend<160, 160, boost::multiprecision::signed_magnitude, boost::multiprecision::unchecked, void>>;
+using u256 =  boost::multiprecision::number<boost::multiprecision::cpp_int_backend<256, 256, boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>>;
+using s256 =  boost::multiprecision::number<boost::multiprecision::cpp_int_backend<256, 256, boost::multiprecision::signed_magnitude, boost::multiprecision::unchecked, void>>;
+using u512 =  boost::multiprecision::number<boost::multiprecision::cpp_int_backend<512, 512, boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>>;
+using s512 =  boost::multiprecision::number<boost::multiprecision::cpp_int_backend<512, 512, boost::multiprecision::signed_magnitude, boost::multiprecision::unchecked, void>>;
+using bigint = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<>>;
+#endif
 using u256s = std::vector<u256>;
 using u160s = std::vector<u160>;
 using u256Set = std::set<u256>;
@@ -82,11 +105,11 @@ static const std::map<u256, u256> EmptyMapU256U256;
 inline s256 u2s(u256 _u)
 {
     static const bigint c_end = (bigint)1 << 256;
-    static const u256 c_send = (u256)1 << 255;
+	static const bigint c_send = (u256)1 << 255;
     if (_u < c_send)
         return (s256)_u;
     else
-        return (s256)-(c_end - _u);
+		return (s256)-(c_end - (bigint)_u);
 }
 
 inline u256 s2u(s256 _u)
@@ -95,7 +118,7 @@ inline u256 s2u(s256 _u)
     if (_u >= 0)
         return (u256)_u;
     else
-        return (u256)(c_end + _u);
+		return (u256)(c_end + (bigint)_u);
 }
 
 inline unsigned int toLog2(u256 _x)

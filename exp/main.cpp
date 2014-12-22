@@ -78,6 +78,10 @@ int main()
 #else
 int main()
 {
+	cnote << sizeof(boost::large_int::luint160_t);
+	cnote << sizeof(boost::large_int::luint256_t);
+	cnote << sizeof(boost::multiprecision::number<boost::multiprecision::cpp_int_backend<256, 256, boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>>);
+	cnote << sizeof(h256);
 	KeyPair u = KeyPair::create();
 	KeyPair cb = KeyPair::create();
 	OverlayDB db;

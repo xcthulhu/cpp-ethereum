@@ -33,6 +33,19 @@ namespace dev
 
 extern std::mt19937_64 s_fixedHashEngine;
 
+#if ETH_FIXEDINT
+template <unsigned N> struct ArithType {};
+template <> struct ArithType<1> { using type = uint8_t; };
+template <> struct ArithType<2> { using type = uint16_t; };
+template <> struct ArithType<4> { using type = uint32_t; };
+template <> struct ArithType<8> { using type = uint64_t; };
+template <> struct ArithType<16> { using type = u128; };
+template <> struct ArithType<20> { using type = u160; };
+template <> struct ArithType<32> { using type = u256; };
+template <> struct ArithType<64> { using type = u512; };
+template <> struct ArithType<128> { using type = u1024; };
+#endif
+
 /// Fixed-size raw-byte array container type, with an API optimised for storing hashes.
 /// Transparently converts to/from the corresponding arithmetic type; this will
 /// assume the data contained in the hash is big-endian.
@@ -41,7 +54,11 @@ class FixedHash
 {
 public:
 	/// The corresponding arithmetic type.
+#if ETH_FIXEDINT
+	using Arith = typename ArithType<N>::type;
+#else
 	using Arith = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<N * 8, N * 8, boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>>;
+#endif
 
 	/// The size of the container.
 	enum { size = N };
