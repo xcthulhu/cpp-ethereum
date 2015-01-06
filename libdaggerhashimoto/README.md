@@ -1,0 +1,1 @@
+See the [nbviewer.ipython.org](http://nbviewer.ipython.org/github/xcthulhu/cpp-ethereum/blob/dagger-hashimoto/libdaggerhashimoto/ref/Reference_Implementation.ipynb) of the *Reference Implementation* in `ref/` for analysis
