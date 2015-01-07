@@ -31,7 +31,7 @@ num decode_num(const std::string str)
 {
   num out = num_zero;
   for(const unsigned char& c : str) {
-    num_shiftl_in_place(&out, 8);
+    num_lshift_in_place(&out, 8);
     num_add_in_place(&out, uint_to_num(c));
   }
   return out;

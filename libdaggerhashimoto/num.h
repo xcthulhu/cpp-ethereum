@@ -57,10 +57,10 @@ extern "C" {
   unsigned int double_num_to_uint (const double_num);
   double_num num_to_double_num (const num);
   num double_num_to_num (const double_num);
-  num num_shiftr (const num, unsigned int);
-  mp_limb_t num_shiftr_in_place(num * , unsigned int);
-  num num_shiftl (const num, unsigned int);
-  mp_limb_t num_shiftl_in_place(num * , unsigned int);
+  num num_rshift (const num, unsigned int);
+  mp_limb_t num_rshift_in_place(num * , unsigned int);
+  num num_lshift (const num, unsigned int);
+  mp_limb_t num_lshift_in_place(num * , unsigned int);
   int num_cmp(const num, const num);
   int double_num_cmp(const double_num, const double_num);
   int num_is_zero(const num);
@@ -73,10 +73,12 @@ extern "C" {
   void num_multiply_to_addr(double_num *, const num, const num);
 
   num double_num_mod_num(const double_num, const num);
+  num num_mult_mod(const num a, const num b, const num m);
   num num_pow_mod(num, int, const num);
 
   mp_limb_t num_mod_uint(num, unsigned int);
   int num_is_odd(const num);
+  num cantor_mod(num, const num, const num);
 
 #ifdef __cplusplus
 }

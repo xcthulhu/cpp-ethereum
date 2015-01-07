@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(uint_to_double_num_and_back)
 }
 
 
-BOOST_AUTO_TEST_CASE(shiftr)
+BOOST_AUTO_TEST_CASE(rshift)
 {
   const char * init = "3273390607896141870013189696827599152216642046043064789483291368096133796404674554883270092325904157150886684127560071009217256545885393053328527589376"; // 2**500
   const char * expected = "2977131414714805823690030317109266572712515013375254774912983855843898524112477893944078543723575564536883288499266264815757728270805630976"; // 2**460
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(shiftr)
     "Must be within 1 and " << mp_bits_per_limb - 1 << "\n"
     );
 
-  write_num(actual, num_shiftr(read_num(init), r));
+  write_num(actual, num_rshift(read_num(init), r));
   BOOST_REQUIRE_MESSAGE(
     ! strcmp(expected, actual),
     "Expected : " << expected << "\n" <<
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(shiftr)
     );
 }
 
-BOOST_AUTO_TEST_CASE(shiftr_in_place)
+BOOST_AUTO_TEST_CASE(rshift_in_place)
 {
   const char * init = "136891479058588375991326027382088315966463695625337436471480190078368997177499076593800206155688941388250484440597994042813512732765695774566001"; // 3**300
   const char * expected = "130549887713039756766630198843086544004882522225701748343925657347077366998194767564583021312416974437952503624532693903745186550870605253"; // 3**300 >> 20
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(shiftr_in_place)
     "Must be within 1 and " << mp_bits_per_limb - 1 << "\n"
     );
 
-  num_shiftr_in_place(&n, r);
+  num_rshift_in_place(&n, r);
   write_num(actual, n);
 
   BOOST_REQUIRE_MESSAGE(
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(shiftr_in_place)
     );
 }
 
-BOOST_AUTO_TEST_CASE(shiftl_in_place)
+BOOST_AUTO_TEST_CASE(lshift_in_place)
 {
   const char * init = "136891479058588375991326027382088315966463695625337436471480190078368997177499076593800206155688941388250484440597994042813512732765695774566001"; // 3**300
   const char * expected = "143541119545338364943480680488200638002850636104033827785518811791615849584393271738420644969907687405126139972784482201437221927272522212511319064576"; // 3**300 << 20
@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(shiftl_in_place)
     "Must be within 1 and " << mp_bits_per_limb - 1 << "\n"
     );
 
-  num_shiftl_in_place(&n, l);
+  num_lshift_in_place(&n, l);
   write_num(actual, n);
 
   BOOST_REQUIRE_MESSAGE(
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(shiftl_in_place)
     );
 }
 
-BOOST_AUTO_TEST_CASE(shiftl)
+BOOST_AUTO_TEST_CASE(lshift)
 {
   const char * init = "136891479058588375991326027382088315966463695625337436471480190078368997177499076593800206155688941388250484440597994042813512732765695774566001"; // 3**300
   const char * expected = "143541119545338364943480680488200638002850636104033827785518811791615849584393271738420644969907687405126139972784482201437221927272522212511319064576"; // 3**300 << 20
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(shiftl)
     "Must be within 1 and " << mp_bits_per_limb - 1 << "\n"
     );
 
-  write_num(actual, num_shiftl(n, l));
+  write_num(actual, num_lshift(n, l));
   BOOST_REQUIRE_MESSAGE(
     ! strcmp(expected, actual),
     "Expected : " << expected << "\n" <<
@@ -384,44 +384,6 @@ BOOST_AUTO_TEST_CASE(xor_in_place_check)
     );
 }
 
-/********************************************/
-// daggerhashimoto.h checks
-
-BOOST_AUTO_TEST_CASE(encode_num_as_string)
-{
-  const char * expected =
-    "-_-_-_-_-_-_-"
-    "a man in the depths of an ether binge."
-    "-_-_-_-_-_-_-";
-  const num n = read_num("2376313254082295953483669800170309493694116695737382715009547212327485292275330050638210649550095629709409670607075760221038595165073824153062320546602797");
-  enc_num actual = encode_num(n);
-  BOOST_REQUIRE_MESSAGE(
-    strlen(expected) == ENCODED_NUM_BYTES,
-    "Expected ENCODED_NUM_BYTES " << ENCODED_NUM_BYTES <<
-    " to be " << strlen(expected) << "\n" <<
-    "(the length of the string \"" << expected << "\")"
-    );
-  BOOST_REQUIRE_MESSAGE(
-    !std::memcmp(expected, actual.char_array, ENCODED_NUM_BYTES),
-    "Expected: \"" << expected << "\"\n" <<
-    "Actual: \"" << actual.char_array << "\"\n" <<
-    "ENCODED_NUM_BYTES : " << ENCODED_NUM_BYTES
-    );
-}
-
-BOOST_AUTO_TEST_CASE(sha3_check)
-{
-  const char * expected = "103588989910066412099008601990527779123911989727766679804758218239207085010305";
-  const num result = num_sha3(read_num("32483691262734967725664914442765702524327428635899764086166644844913352168645"));
-  char actual[155];
-  write_num(actual, result);
-  BOOST_REQUIRE_MESSAGE(
-    !strcmp(expected, actual),
-    "Expected : " << expected << "\n" <<
-    "Actual : " << actual << "\n"
-    );
-}
-
 BOOST_AUTO_TEST_CASE(num_multiply_check)
 {
   const char * expected_ = "36360291795869936842385267079543319118023385026001623040346035832580600191583895484198508262979388783308179702534403855752855931517013066142992430916562025780021771247847643450125342836565813209972590371590152578728008385990139795377610001"; // 3**500
@@ -469,9 +431,79 @@ BOOST_AUTO_TEST_CASE(double_mod_num_check)
     );
 }
 
+BOOST_AUTO_TEST_CASE(cantor_check_easy) {
+  const num
+    P = read_num("13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006045979"),
+    a = uint_to_num(8),
+    b = uint_to_num(9);
+  char
+    expected[] ="162",
+    actual[155];
+  write_num(actual, cantor_mod(a,b,P));
+    BOOST_REQUIRE_MESSAGE(
+      ! strcmp(expected, actual),
+      "expected: " << expected << "\n"
+      << "actual: " << actual << "\n"
+      );
+}
+
+BOOST_AUTO_TEST_CASE(cantor_check_hard) {
+  const num
+    P = read_num("13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006045979"),
+    a = read_num("62230152778611417071440640537801242405902521687211671331011166147896988340353834411839448231257136169569665895551224821247160434722900390625"),
+    b = read_num("311150763893057085357203202689006212029512608436058356655055830739484941701769172059197241156285680847848329477756124106235802173614501953125");
+  char
+    expected[] ="4010854971363390331613898522504589870257717720166169022549278453355405563515053855495749342057967015247604150076649908132547993187185065175700882090511757",
+    actual[155];
+  write_num(actual, cantor_mod(a,b,P));
+    BOOST_REQUIRE_MESSAGE(
+      ! strcmp(expected, actual),
+      "expected: " << expected << "\n"
+      << "actual: " << actual << "\n"
+      );
+}
+
+/********************************************/
+// daggerhashimoto.h checks
+
+BOOST_AUTO_TEST_CASE(encode_num_as_string)
+{
+  const char * expected =
+    "-_-_-_-_-_-_-"
+    "a man in the depths of an ether binge."
+    "-_-_-_-_-_-_-";
+  const num n = read_num("2376313254082295953483669800170309493694116695737382715009547212327485292275330050638210649550095629709409670607075760221038595165073824153062320546602797");
+  enc_num actual = encode_num(n);
+  BOOST_REQUIRE_MESSAGE(
+    strlen(expected) == ENCODED_NUM_BYTES,
+    "Expected ENCODED_NUM_BYTES " << ENCODED_NUM_BYTES <<
+    " to be " << strlen(expected) << "\n" <<
+    "(the length of the string \"" << expected << "\")"
+    );
+  BOOST_REQUIRE_MESSAGE(
+    !std::memcmp(expected, actual.char_array, ENCODED_NUM_BYTES),
+    "Expected: \"" << expected << "\"\n" <<
+    "Actual: \"" << actual.char_array << "\"\n" <<
+    "ENCODED_NUM_BYTES : " << ENCODED_NUM_BYTES
+    );
+}
+
+BOOST_AUTO_TEST_CASE(sha3_check)
+{
+  const char * expected = "103588989910066412099008601990527779123911989727766679804758218239207085010305";
+  const num result = num_sha3(read_num("32483691262734967725664914442765702524327428635899764086166644844913352168645"));
+  char actual[155];
+  write_num(actual, result);
+  BOOST_REQUIRE_MESSAGE(
+    !strcmp(expected, actual),
+    "Expected : " << expected << "\n" <<
+    "Actual : " << actual << "\n"
+    );
+}
+
 BOOST_AUTO_TEST_CASE(double_mod_default_param_P)
 {
-  const char * expected_ = "8811608540281055256345643362681227616461045216252211008426951355398271759222495465685760399125663211250914198651378952766444740274154359718936804753093543"; // 3**400 % P
+  const char * expected_ = "8811608540281055256345643362681227616461045216252211008426951355398271759222495465685760399125663211250914198651576527278069568242872816674747523441537135"; // 3**400 % P
   const num expected = read_num(expected_);
   const double_num a = read_double_num("70550791086553325712464271575934796216507949612787315762871223209262085551582934156579298529447134158154952334825355911866929793071824566694145084454535257027960285323760313192443283334088001"); // 3**400
   const num P = get_default_params().P;
@@ -496,7 +528,6 @@ BOOST_AUTO_TEST_CASE(num_mod_uint_check)
     "actual: " << actual << "\n"
     );
 }
-
 
 BOOST_AUTO_TEST_CASE(num_is_odd_check)
 {
@@ -527,58 +558,47 @@ BOOST_AUTO_TEST_CASE(num_pow_mod_check){
     );
 }
 
+BOOST_AUTO_TEST_CASE(num_mult_mod_check){
+  const num
+    a = read_num("30834610858062074296448642597405756808220843024709445075135965107038834920948"),
+    P = read_num("13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006045979");
+  {
+    const char * expected = "950773226768119569714559904964937336983928087723880850490000708362484574442340375342810492566468892628466140782865499580645227699565570873957037409218704";
+    char actual[155];
+    write_num(actual, num_mult_mod(a,a,P));
+    BOOST_REQUIRE_MESSAGE(
+      !strcmp(expected, actual),
+      "expected: " << expected << "\n" <<
+      "actual: " << actual << "\n"
+      );
+  }
+  {
+    const char * expected = "12946592222289761800348450503220384469365214983009637212441024283805102330842886752016150482813558946845758275119449160735119855410668970579005185818698054";
+    char actual[155];
+    write_num(actual, num_mult_mod(num_mult_mod(a,a,P), a, P));
+    BOOST_REQUIRE_MESSAGE(
+      !strcmp(expected, actual),
+      "expected: " << expected << "\n" <<
+      "actual: " << actual << "\n"
+      );
+  }
+}
+
 BOOST_AUTO_TEST_CASE(produce_dag_check){
 
   const num seed = uint_to_num(999998888);
-  char actual_[155];
-
-  // Check SHA3(seed) is as expected
-  {
-    const char * expected_ = "30834610858062074296448642597405756808220843024709445075135965107038834920946";
-    num actual = num_sha3(seed);
-    write_num(actual_, actual);
-    BOOST_REQUIRE_MESSAGE(
-      !strcmp(expected_, actual_),
-      "expected: " << expected_ << "\n" <<
-      "actual: " << actual_ << "\n"
-      );
-  }
-
-  // Check SHA3(seed) + 2 is as expected
-  {
-    const char * expected_ = "30834610858062074296448642597405756808220843024709445075135965107038834920948";
-    num actual = num_add(num_sha3(seed), num_two);
-    write_num(actual_, actual);
-    BOOST_REQUIRE_MESSAGE(
-      !strcmp(expected_, actual_),
-      "expected: " << expected_ << "\n" <<
-      "actual: " << actual_ << "\n"
-      );
-  }
-
-  // Check pow(SHA3(seed) + 2, 2, params.P) is as expected
+  char actual_[155], expected_[155];
   parameters params = get_default_params();
-  {
-    const char * expected_ = "950773226768119569714559904964937336983928087723880850490000708362484574442340375342810492566468892628466140782865499580645227699565570873957037409218704";
-    num actual = num_pow_mod(num_add(num_sha3(seed), num_two), 2, params.P);
-    write_num(actual_, actual);
-    BOOST_REQUIRE_MESSAGE(
-      !strcmp(expected_, actual_),
-      "expected: " << expected_ << "\n" <<
-      "actual: " << actual_ << "\n"
-      );
-  }
-
   const int size = 5;
-  num expected[size] = {
+  num
+    actual[size],
+    expected[size] = {
     read_num("12946592222289761800348450503220384469365214983009637212441024283805102330842886752016150482813558946845758275119449160735119855410668970579005185818698054"),
     read_num("9430959799509364199938662379808489869328324369163942920342372938348060180097135426429590093226718001816186038499249384755013798094542981363448277939871326"),
     read_num("4301974854406447892343667082403677551908600916016924633151292713424651911527918363072571014008599478867821054040948406800439759977246463008561179084152473"),
     read_num("4599698502906874114955027459370086974435665624602048196342493677810448976006006812496698306930007750793298338614942082946718772173829843647556459973918882"),
     read_num("6293417495270500823502726444679175878463226905969000272807059440329134133791874932739923780691426852726556618914123449607646693495875285018593048211681023")
   };
-  num actual[size];
-  char expected_[155];
   params.n = size;
   produce_dag(actual, params, seed);
   for(int i = 0 ; i < size ; ++i) {
@@ -592,3 +612,70 @@ BOOST_AUTO_TEST_CASE(produce_dag_check){
       );
   }
 }
+
+BOOST_AUTO_TEST_CASE(quick_calc_check) {
+  parameters params = get_default_params();
+  const int size = 100;
+  num expected[size];
+  const num seed = read_num("123123123123123123123123123123123123");
+  char expected_[155], actual_[155];
+  params.n = size;
+  params.cache_size = size / 10;
+  produce_dag(expected, params, seed);
+  for(int i = 0 ; i < size ; ++i) {
+    write_num(expected_, expected[i]);
+    write_num(actual_, quick_calc(params, seed, i));
+    BOOST_REQUIRE_MESSAGE(
+      ! strcmp(expected_, actual_),
+      "i: " << i << "\n"
+      << "expected: " << expected_ << "\n"
+      << "actual: " << actual_ << "\n"
+      );
+  }
+}
+
+BOOST_AUTO_TEST_CASE(hashimoto_check) {
+  parameters params = get_default_params();
+  const int size = 100;
+  num dag[size];
+  const num
+    seed = read_num("7"),
+    header = read_num("123"),
+    nonce = read_num("800");
+  char expected[] = "97418297196838358458655356064520668367771298950637159168215218954926213481962",
+    actual[155];
+
+  params.n = size;
+  produce_dag(dag, params, seed);
+  write_num(actual, hashimoto(dag, params, header, nonce));
+
+  BOOST_REQUIRE_MESSAGE(
+    ! strcmp(expected, actual),
+    "expected: " << expected << "\n"
+    << "actual: " << actual << "\n"
+    );
+}
+
+BOOST_AUTO_TEST_CASE(quick_hashimoto_check) {
+  parameters params = get_default_params();
+  const int size = 100;
+  num dag[size];
+  const num
+    seed = read_num("7"),
+    header = read_num("123"),
+    nonce = read_num("800");
+  char expected[155],
+    actual[155];
+
+  params.n = size;
+  params.cache_size = 10;
+  produce_dag(dag, params, seed);
+  write_num(expected, hashimoto(dag, params, header, nonce));
+  write_num(actual, quick_hashimoto(seed, params, header, nonce));
+
+  BOOST_REQUIRE_MESSAGE(
+    ! strcmp(expected, actual),
+    "expected: " << expected << "\n"
+    << "actual: " << actual << "\n"
+    );
+ }

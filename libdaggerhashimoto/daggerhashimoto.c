@@ -23,11 +23,12 @@
 #include "daggerhashimoto.h"
 #include "SHA3.h"
 
-#define BIG_PRIME "13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006083527"
+#define BIG_PRIME "13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006045979"
 
 static parameters defaults = {
   .n = 250000,
   .diff = 16384,  // 2**14
+  .cache_size = 25000,
   .epochtime = 1000,
   .k = 2,
   .w = 3,
@@ -74,7 +75,7 @@ void encode_num_in_place(enc_num * e, num n) {
   int i = ENCODED_NUM_BYTES;
   while(i) {
     e->char_array[--i] = num_to_uint(n) % 256;
-    num_shiftr_in_place(&n, 8);
+    num_rshift_in_place(&n, 8);
   }
 };
 
@@ -85,22 +86,22 @@ enc_num encode_num(const num n) {
 };
 
 /*
- * Reference implementation:
- *
- * def produce_dag(params, seed):
- *     P = params["P"]
- *     picker = init = pow(sha3(seed) + 2, 3, P)
- *     o = [init]
- *     for i in range(1, params["n"]):
- *         x = picker = (picker * init) % P
- *         for _ in range(params["k"]):
- *             x ^= o[x % i]
- *         o.append(pow(x, params["w"], P))
- *     return o
- *
- * NOTE:  While the DAG only contains entries with NUM_BITS,
- *  Certain values used in its calculation will use as much as
- *  2*NUM_BITS, so double precision is used in those places.
+   Reference implementation:
+
+   def produce_dag(params, seed):
+       P = params["P"]
+       picker = init = pow(sha3(seed) + 2, 3, P)
+       o = [init]
+       for i in range(1, params["n"]):
+           x = picker = (picker * init) % P
+           for _ in range(params["k"]):
+               x ^= o[x % i]
+           o.append(pow(x, params["w"], P))
+       return o
+
+   NOTE:  While the DAG only contains entries with NUM_BITS,
+    Certain values used in its calculation will use as much as
+    2*NUM_BITS, so double precision is used in those places.
  */
 
 void produce_dag(num * dag, const parameters params, const num seed) {
@@ -119,4 +120,96 @@ void produce_dag(num * dag, const parameters params, const num seed) {
       num_xor_in_place(&x, dag[num_mod_uint(x, i)]);
     dag[i] = num_pow_mod(x, w, P);
   }
+}
+/*
+   Reference implementation:
+
+   def quick_calc(params, seed, p):
+       from copy import deepcopy
+       cache_params = deepcopy(params)
+       cache_params["n"] = params["cache_size"]
+       cache = produce_dag(cache_params, seed)
+       init = pow(sha3(seed) + 2, params["w"], params["P"])
+       return quick_calc_cached(cache, params, init, p)
+*/
+
+num quick_calc(parameters params, const num seed, const int pos) {
+  num cache[params.cache_size];
+  params.n = params.cache_size;
+  produce_dag(cache, params, seed);
+  return quick_calc_cached(cache, params, pos);
+}
+
+/*
+ * def quick_calc_cached(cache, params, p):
+ *     P = params["P"]
+ *     if p < len(cache):
+ *         return cache[p]
+ *     else:
+ *         x = pow(cache[0], p + 1, P)
+ *         for _ in range(params["k"]):
+ *             x ^= quick_calc_cached(cache, params, init, x % p)
+ *         return pow(x, params["w"], P)
+ */
+
+num quick_calc_cached(const num * cache, const parameters params, const int pos) {
+  if (pos < params.cache_size)
+    return cache[pos];
+  else {
+    num x = num_pow_mod(cache[0], pos+1, params.P);
+    for(int i = 0 ; i < params.k ; ++i)
+      num_xor_in_place(&x, quick_calc_cached(cache, params, num_mod_uint(x, pos)));
+    return num_pow_mod(x, params.w, params.P);
+  }
+}
+
+/*
+ * def hashimoto(dag, params, header, nonce):
+ *     mix = sha3(header+nonce)
+ *     i = mix % (params["n"] - params["accesses"])
+ *     for p in range(i,i+params["accesses"]+1):
+ *         mix = pair(mix, dag[p], params["P"])
+ *     return sha3(mix)
+ */
+
+num hashimoto(const num * dag, const parameters params, const num header, const num nonce) {
+  num mix = num_sha3(num_add(header, nonce));
+  const unsigned int i = num_mod_uint(mix, params.n - params.accesses);
+  for(unsigned int p = i; p <= i + params.accesses; ++p)
+    mix = cantor_mod(mix, dag[p], params.P);
+  return num_sha3(mix);
+}
+
+/*
+ * def quick_hashimoto(seed, params, header, nonce):
+ *     from copy import deepcopy
+ *     cache_params = deepcopy(params)
+ *     cache_params["n"] = params["cache_size"]
+ *     cache = produce_dag(cache_params, seed)
+ *     return quick_hashimoto_cached(cache, params, header, nonce)
+*/
+
+num quick_hashimoto(const num seed, parameters params, const num header, const num nonce) {
+  const int original_n = params.n;
+  num cache[params.cache_size];
+  params.n = params.cache_size;
+  produce_dag(cache, params, seed);
+  params.n = original_n;
+  return quick_hashimoto_cached(cache, params, header, nonce);
+}
+
+/*
+ * def quick_hashimoto_cached(cache, params, header, nonce):
+ *     mix = sha3(header+nonce)
+ *     i = mix % (params["n"] - params["accesses"])
+ *     for p in range(i,i+params["accesses"]+1):
+ *         mix = pair(mix, quick_calc_cached(cache, params, p), params["P"])
+ *     return sha3(mix)
+ */
+num quick_hashimoto_cached(const num * cache, const parameters params, const num header, const num nonce) {
+  num mix = num_sha3(num_add(header, nonce));
+  const unsigned int i = num_mod_uint(mix, params.n - params.accesses);
+  for(unsigned int p = i; p <= i + params.accesses; ++p)
+    mix = cantor_mod(mix, quick_calc_cached(cache, params, p), params.P);
+  return num_sha3(mix);
 }

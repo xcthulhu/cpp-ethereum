@@ -101,26 +101,26 @@ num double_num_to_num (const double_num d) {
 }
 
 // Right bit shift
-num num_shiftr(const num n, unsigned int count) {
+num num_rshift(const num n, unsigned int count) {
   num out;
   mpn_rshift(out._mp_d, n._mp_d, NUM_LIMBS, count);
   return out;
 }
 
 // Right bit shift in place
-mp_limb_t num_shiftr_in_place(num * n, unsigned int count) {
+mp_limb_t num_rshift_in_place(num * n, unsigned int count) {
   return mpn_rshift(n->_mp_d, n->_mp_d, NUM_LIMBS, count);
 }
 
 // Left bit shift
-num num_shiftl(const num n, unsigned int count) {
+num num_lshift(const num n, unsigned int count) {
   num out;
   mpn_lshift(out._mp_d, n._mp_d, NUM_LIMBS, count);
   return out;
 }
 
 // Left bit shift in place
-mp_limb_t num_shiftl_in_place(num * n, unsigned int count) {
+mp_limb_t num_lshift_in_place(num * n, unsigned int count) {
   return mpn_lshift(n->_mp_d, n->_mp_d, NUM_LIMBS, count);
 }
 
@@ -191,7 +191,7 @@ void double_num_mod_num_to_addr(num * dest, const double_num a, const num b) {
 }
 
 num double_num_mod_num(const double_num a, const num b) {
-  // NOTE!  b must be greater than 2**448 !
+  // NOTE!  b must be greater than 64**(NUM_LIMBS-1) !
   num residue;
   double_num_mod_num_to_addr(&residue, a, b);
   return residue;
@@ -206,21 +206,51 @@ int num_is_odd(const num n) {
   return n._mp_d[0] & 1;
 }
 
+num num_mult_mod(const num a, const num b, const num m) {
+  return double_num_mod_num(num_multiply(a, b), m);
+}
+
 num num_pow_mod(num a, int b, const num m)
 {
-  // NOTE! m must be greater than 2**448 !
+  // NOTE! m must be greater than 64**(NUM_LIMBS-1) !
   double_num temp;
   num r = num_one;
   while (1) {
     if (b & 1) {
-      temp = num_multiply(a, r);
-      r = double_num_mod_num(temp, m);
+      num_multiply_to_addr(&temp, a, r);
+      double_num_mod_num_to_addr(&r, temp, m);
     }
     b >>= 1;
     if (b == 0)
       break;
-    temp = num_multiply(a, a);
-    a = double_num_mod_num(temp, m);
+    num_multiply_to_addr(&temp, a, a);
+    double_num_mod_num_to_addr(&a, temp, m);
   }
   return r;
+}
+
+num cantor_mod(num a, const num b, const num m)
+{
+  // NOTE! m must be greater than 64**(NUM_LIMBS-1) !
+  // NOTE! a must be less than 64**NUM_LIMBS - 1 !
+  // ((a+b)*(a+b+1) / 2 + b) % m
+
+  double_num temp1;
+  num temp2, temp3;
+  mp_limb_t throwaway[DOUBLE_NUM_LIMBS - NUM_LIMBS + 1];
+  // Compute (a+b) % m and store in temp2
+  temp1._mp_d[NUM_LIMBS] = mpn_add_n(temp1._mp_d, a._mp_d, b._mp_d, NUM_LIMBS);
+  mpn_tdiv_qr(throwaway, temp2._mp_d, 0, temp1._mp_d, NUM_LIMBS+1, m._mp_d, NUM_LIMBS);
+  // Compute (a+b+1) % m and store in temp3
+  num_add_in_place(&a,num_one); // assumes a < (64**NUM_LIMBS)-1
+  temp1._mp_d[NUM_LIMBS] = mpn_add_n(temp1._mp_d, a._mp_d, b._mp_d, NUM_LIMBS);
+  mpn_tdiv_qr(throwaway, temp3._mp_d, 0, temp1._mp_d, NUM_LIMBS+1, m._mp_d, NUM_LIMBS);
+  // Compute (a+b)*(a+b+1)/2 % m and store in temp2
+  num_multiply_to_addr(&temp1, temp2, temp3);
+  mpn_rshift(temp1._mp_d, temp1._mp_d, DOUBLE_NUM_LIMBS, 1);
+  double_num_mod_num_to_addr(&temp2, temp1, m);
+  // Compute (a+b)*(a+b+1)/2 + b % m and store in temp2
+  temp1._mp_d[NUM_LIMBS] = mpn_add_n(temp1._mp_d, temp2._mp_d, b._mp_d, NUM_LIMBS);
+  mpn_tdiv_qr(throwaway, temp2._mp_d, 0, temp1._mp_d, NUM_LIMBS+1, m._mp_d, NUM_LIMBS);
+  return temp2;
 }

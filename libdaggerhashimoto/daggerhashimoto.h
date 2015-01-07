@@ -30,24 +30,30 @@ extern "C" {
 
 #include <limits.h>
 #define ENCODED_NUM_BYTES (NUM_BITS / CHAR_BIT)
-typedef struct {char char_array[ENCODED_NUM_BYTES];} enc_num;
-typedef struct {
-  int n;            // Size of the dataset
-  int diff;         // Difficulty (adjusted during block evaluation)
-  int epochtime;    // Length of an epoch in blocks (how often the dataset is updated)
-  int k;            // Number of parents of a node
-  int w;            // Work factor for proof of work during nonce calculations
-  int is_serial;    // Is hashimoto modified to be serial?
-  int accesses;     // Number of dataset accesses during hashimoto
-  num P;              // Number to modulo everything by
-} parameters;
+  typedef struct {char char_array[ENCODED_NUM_BYTES];} enc_num;
+  typedef struct {
+    int n;            // Size of the dataset
+    int diff;         // Difficulty (adjusted during block evaluation)
+    int epochtime;    // Length of an epoch in blocks (how often the dataset is updated)
+    int cache_size;   // How big should the light client's cache be?
+    int k;            // Number of parents of a node
+    int w;            // Work factor for proof of work during nonce calculations
+    int is_serial;    // Is hashimoto modified to be serial?
+    int accesses;     // Number of dataset accesses during hashimoto
+    num P;            // Number to modulo everything by
+  } parameters;
 
 
-parameters get_default_params();
+  parameters get_default_params();
 
-enc_num encode_num(const num);
-void encode_num_in_place(enc_num *, num);
-void produce_dag(num *, const parameters, const num);
+  enc_num encode_num(const num);
+  void encode_num_in_place(enc_num *, num);
+  void produce_dag(num * dag, const parameters params, const num seed);
+  num quick_calc(parameters params, const num seed, const int p);
+  num quick_calc_cached(const num * cache, const parameters params, const int p);
+  num hashimoto(const num * dag, const parameters params, const num header, const num nonce);
+  num quick_hashimoto(const num seed, parameters params, const num header, const num nonce);
+  num quick_hashimoto_cached(const num * cache, const parameters params, const num header, const num nonce);
 
 #ifdef __cplusplus
 }
