@@ -9,10 +9,11 @@ int main(void){
     header = read_num("123"),
     seed = read_num("7");
   const int
-    size = 100000,
+    size = 15625000,
     trials = 100;
   unsigned int hash_bit = 0;
-  num dag[size], nonce = num_zero;
+  num * dag = malloc(sizeof(num)*size);
+  num nonce = num_zero;
   clock_t begin, end;
   double time_spent;
   char out[155];
@@ -31,5 +32,6 @@ int main(void){
     time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("%i\t%f\t%d\n", accesses, time_spent, hash_bit);
   }
+  free(dag);
   return EXIT_SUCCESS;
 }
