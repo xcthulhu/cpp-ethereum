@@ -89,6 +89,9 @@ BOOST_AUTO_TEST_CASE(uint_to_num_and_back)
     );
 }
 
+/* TODO: test little endian-ness of num */
+/* TODO: test mp_limb_t is 64 bits */
+
 BOOST_AUTO_TEST_CASE(uint_to_double_num_and_back)
 {
   const unsigned int expected = 123456;
@@ -634,48 +637,48 @@ BOOST_AUTO_TEST_CASE(quick_calc_check) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(hashimoto_check) {
-  parameters params = get_default_params();
-  const int size = 100;
-  num dag[size];
-  const num
-    seed = read_num("7"),
-    header = read_num("123"),
-    nonce = read_num("800");
-  char expected[] = "97418297196838358458655356064520668367771298950637159168215218954926213481962",
-    actual[155];
-
-  params.n = size;
-  produce_dag(dag, params, seed);
-  write_num(actual, hashimoto(dag, params, header, nonce));
-
-  BOOST_REQUIRE_MESSAGE(
-    ! strcmp(expected, actual),
-    "expected: " << expected << "\n"
-    << "actual: " << actual << "\n"
-    );
-}
-
-BOOST_AUTO_TEST_CASE(quick_hashimoto_check) {
-  parameters params = get_default_params();
-  const int size = 100;
-  num dag[size];
-  const num
-    seed = read_num("7"),
-    header = read_num("123"),
-    nonce = read_num("800");
-  char expected[155],
-    actual[155];
-
-  params.n = size;
-  params.cache_size = 10;
-  produce_dag(dag, params, seed);
-  write_num(expected, hashimoto(dag, params, header, nonce));
-  write_num(actual, quick_hashimoto(seed, params, header, nonce));
-
-  BOOST_REQUIRE_MESSAGE(
-    ! strcmp(expected, actual),
-    "expected: " << expected << "\n"
-    << "actual: " << actual << "\n"
-    );
- }
+//BOOST_AUTO_TEST_CASE(hashimoto_check) {
+//  parameters params = get_default_params();
+//  const int size = 100;
+//  num dag[size];
+//  const num
+//    seed = read_num("7"),
+//    header = read_num("123"),
+//    nonce = read_num("800");
+//  char expected[] = "97418297196838358458655356064520668367771298950637159168215218954926213481962",
+//    actual[155];
+//
+//  params.n = size;
+//  produce_dag(dag, params, seed);
+//  write_num(actual, hashimoto(dag, params, header, nonce));
+//
+//  BOOST_REQUIRE_MESSAGE(
+//    ! strcmp(expected, actual),
+//    "expected: " << expected << "\n"
+//    << "actual: " << actual << "\n"
+//    );
+//}
+//
+//BOOST_AUTO_TEST_CASE(quick_hashimoto_check) {
+//  parameters params = get_default_params();
+//  const int size = 100;
+//  num dag[size];
+//  const num
+//    seed = read_num("7"),
+//    header = read_num("123"),
+//    nonce = read_num("800");
+//  char expected[155],
+//    actual[155];
+//
+//  params.n = size;
+//  params.cache_size = 10;
+//  produce_dag(dag, params, seed);
+//  write_num(expected, hashimoto(dag, params, header, nonce));
+//  write_num(actual, quick_hashimoto(seed, params, header, nonce));
+//
+//  BOOST_REQUIRE_MESSAGE(
+//    ! strcmp(expected, actual),
+//    "expected: " << expected << "\n"
+//    << "actual: " << actual << "\n"
+//    );
+// }

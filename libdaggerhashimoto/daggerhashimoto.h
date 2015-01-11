@@ -40,6 +40,7 @@ extern "C" {
     int w;            // Work factor for proof of work during nonce calculations
     int is_serial;    // Is hashimoto modified to be serial?
     int accesses;     // Number of dataset accesses during hashimoto
+    int trials;       // Number of times to run hashimoto
     num P;            // Number to modulo everything by
   } parameters;
 
@@ -51,9 +52,9 @@ extern "C" {
   void produce_dag(num * dag, const parameters params, const num seed);
   num quick_calc(parameters params, const num seed, const int p);
   num quick_calc_cached(const num * cache, const parameters params, const int p);
-  num hashimoto(const num * dag, const parameters params, const num header, const num nonce);
-  num quick_hashimoto(const num seed, parameters params, const num header, const num nonce);
-  num quick_hashimoto_cached(const num * cache, const parameters params, const num header, const num nonce);
+  num hashimoto(const num * dag, const parameters params, const num header, const unsigned int nonce);
+  num quick_hashimoto(const num seed, parameters params, const num header, const unsigned int nonce);
+  num quick_hashimoto_cached(const num * cache, const parameters params, const num header, const unsigned int nonce);
 
 #ifdef __cplusplus
 }
